@@ -29,8 +29,6 @@ body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background: #f0f
 .btn-success:hover { background: #2c9a94; transform: translateY(-1px); }
 .btn-share { background: #667eea; color: white; }
 .btn-share:hover { background: #5a67d8; transform: translateY(-1px); }
-
-/* 공유 링크 팝업 */
 .share-modal {
   display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0,0,0,0.5); z-index: 10000;
@@ -39,14 +37,11 @@ body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background: #f0f
 .share-modal.show { display: flex; }
 .share-box {
   background: white; border-radius: 16px; padding: 32px;
-  width: 500px; max-width: 90vw;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  width: 500px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 .share-box h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: #1a1a2e; }
 .share-box p { font-size: 13px; color: #718096; margin-bottom: 20px; line-height: 1.6; }
-.share-link-box {
-  display: flex; gap: 8px; margin-bottom: 16px;
-}
+.share-link-box { display: flex; gap: 8px; margin-bottom: 16px; }
 .share-link-input {
   flex: 1; border: 1.5px solid #e2e8f0; border-radius: 8px;
   padding: 10px 14px; font-size: 12px; font-family: inherit;
@@ -62,8 +57,6 @@ body { font-family: 'Malgun Gothic','맑은 고딕',sans-serif; background: #f0f
   border-top-color: #667eea; border-radius: 50%;
   animation: spin 0.8s linear infinite; margin: 0 auto 12px;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-
 .controls {
   background: white; padding: 14px 28px;
   display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
@@ -161,6 +154,7 @@ tbody td.td-left { text-align: left; }
 .toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a2e; color: white; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 9999; opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateY(0); }
 .progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg,#e94560,#667eea); transition: width 0.3s; z-index: 9998; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -236,7 +230,6 @@ tbody td.td-left { text-align: left; }
       <small style="color:#cbd5e0;font-size:12px">실적이상관리_MMDD.xlsx 형식 지원 | "출력" 시트 자동 파싱</small>
     </div>
   </div>
-
   <div id="contentArea" style="display:none">
     <div class="summary-cards" id="summaryCards"></div>
     <div class="table-wrap">
@@ -247,15 +240,13 @@ tbody td.td-left { text-align: left; }
       </div>
       <div class="tbl-scroll">
         <table id="mainTable">
-          <thead>
-            <tr>
-              <th style="width:38px">#</th>
-              <th class="th-left">정산점 &amp; 사업자명</th>
-              <th>담당자</th><th>목표</th><th>실적</th><th>GAP</th>
-              <th>진척률</th><th>3개월평균</th><th>3개월 比</th>
-              <th>전주 比</th><th>전월동주 比</th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th style="width:38px">#</th>
+            <th class="th-left">정산점 &amp; 사업자명</th>
+            <th>담당자</th><th>목표</th><th>실적</th><th>GAP</th>
+            <th>진척률</th><th>3개월평균</th><th>3개월 比</th>
+            <th>전주 比</th><th>전월동주 比</th>
+          </tr></thead>
           <tbody id="mainTbody"></tbody>
         </table>
       </div>
@@ -273,14 +264,15 @@ tbody td.td-left { text-align: left; }
 <script>
 let allData=[], 표준진척률=0, sortKey='3개월比';
 const EXCLUDE_MGR=['협력','DC마트'];
+const GITHUB_PAGES_URL='https://a01084002527-ui.github.io/dasjnpard/';
 const MGR_COLOR={'김윤원':'#c53030','황병준':'#2b6cb0','강민재':'#276749','서승구':'#c05621','김선우':'#6b46c1','김성수':'#b83280','원세영':'#234e52','정선웅':'#744210','박진형':'#1a365d'};
 const MGR_BG={'김윤원':'#fff5f5','황병준':'#ebf8ff','강민재':'#f0fff4','서승구':'#fffaf0','김선우':'#faf5ff','김성수':'#fff5f7','원세영':'#e6fffa','정선웅':'#fffff0','박진형':'#e8edf5'};
-const MGR_BOLD_COLOR={'김윤원':'#b91c1c','황병준':'#1d4ed8','강민재':'#15803d','서승구':'#b45309','김선우':'#7c3aed','김성수':'#be185d','원세영':'#0f766e','정선웅':'#854d0e','박진형':'#1e3a5f'};
-function color(m){return MGR_COLOR[m]||'#4a5568';}
-function boldColor(m){return MGR_BOLD_COLOR[m]||'#1a1a2e';}
-function bg(m){return MGR_BG[m]||'#f7fafc';}
-function fmt(v){return Math.round(v);}
-function fmtPct(v){return(v*100).toFixed(1)+'%';}
+const MGR_BOLD={'김윤원':'#b91c1c','황병준':'#1d4ed8','강민재':'#15803d','서승구':'#b45309','김선우':'#7c3aed','김성수':'#be185d','원세영':'#0f766e','정선웅':'#854d0e','박진형':'#1e3a5f'};
+const color=m=>MGR_COLOR[m]||'#4a5568';
+const boldColor=m=>MGR_BOLD[m]||'#1a1a2e';
+const bg=m=>MGR_BG[m]||'#f7fafc';
+const fmt=v=>Math.round(v);
+const fmtPct=v=>(v*100).toFixed(1)+'%';
 function cvCell(v){const n=fmt(v);if(n<0)return`<span class="val-neg">${n}</span>`;if(n>0)return`<span class="val-pos">+${n}</span>`;return`<span class="val-zero">0</span>`;}
 function getCurrentWeek(w){for(let i=w.length-1;i>=0;i--){if(w[i]!==0)return i;}return 0;}
 function get전월동주比(r){const w=[r.wk1,r.wk2,r.wk3,r.wk4,r.wk5],p=[r.pwk1,r.pwk2,r.pwk3,r.pwk4,r.pwk5],c=getCurrentWeek(w);return w[c]-p[c];}
@@ -290,73 +282,46 @@ function sortVal(r){switch(sortKey){case'GAP':return r['GAP'];case'3개월比':r
 function showToast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
 function setSortKey(k,el){sortKey=k;document.querySelectorAll('.sort-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');applyFilters();}
 
-/* ══════════════════════════════
-   🔗 공유 링크 생성 (JSONBlob)
-══════════════════════════════ */
-const GITHUB_PAGES_URL = 'https://a01084002527-ui.github.io/dasjnpard/';
-
+/* ── 공유 링크 생성 (npoint.io) ── */
 async function createShareLink(){
   document.getElementById('shareModal').classList.add('show');
   document.getElementById('shareLoading').style.display='block';
   document.getElementById('shareLinkArea').style.display='none';
-
   try{
-    const payload = JSON.stringify({ spRate: 표준진척률, rows: allData });
-
-    // JSONBlob에 데이터 저장
-    const res = await fetch('https://jsonblob.com/api/jsonBlob', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: payload
+    const payload=JSON.stringify({spRate:표준진척률,rows:allData});
+    const res=await fetch('https://api.npoint.io/tokens',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:payload})
     });
-
-    if(!res.ok) throw new Error('저장 실패');
-
-    // 응답 헤더에서 ID 추출
-    const location = res.headers.get('Location');
-    const blobId = location.split('/').pop();
-    const shareUrl = `${GITHUB_PAGES_URL}?id=${blobId}`;
-
+    if(!res.ok) throw new Error('저장 실패 ('+res.status+')');
+    const data=await res.json();
+    const shareUrl=`${GITHUB_PAGES_URL}?id=${data.token}`;
     document.getElementById('shareLoading').style.display='none';
     document.getElementById('shareLinkArea').style.display='block';
-    document.getElementById('shareLinkInput').value = shareUrl;
-
+    document.getElementById('shareLinkInput').value=shareUrl;
   }catch(e){
     document.getElementById('shareLoading').style.display='none';
     document.getElementById('shareLinkArea').style.display='block';
-    document.getElementById('shareLinkInput').value = '링크 생성 실패 - 다시 시도해주세요';
+    document.getElementById('shareLinkInput').value='링크 생성 실패 - 다시 시도해주세요';
     showToast('❌ 링크 생성 실패: '+e.message);
   }
 }
 
-function copyLink(){
-  const input = document.getElementById('shareLinkInput');
-  input.select();
-  document.execCommand('copy');
-  showToast('✅ 링크가 복사됐습니다! 카톡으로 공유하세요 😊');
-}
-
-function closeShareModal(){
-  document.getElementById('shareModal').classList.remove('show');
-}
-
-/* ══════════════════════════════
-   URL에 ?id= 있으면 자동 로드
-══════════════════════════════ */
+/* ── URL에서 데이터 로드 ── */
 async function loadFromUrl(){
-  const params = new URLSearchParams(window.location.search);
-  const blobId = params.get('id');
-  if(!blobId) return false;
-
+  const params=new URLSearchParams(window.location.search);
+  const token=params.get('id');
+  if(!token) return false;
   document.getElementById('uploadZone').style.display='none';
   document.getElementById('lastUpdate').textContent='공유 데이터 불러오는 중...';
-
   try{
-    const res = await fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`);
+    const res=await fetch(`https://api.npoint.io/${token}`);
     if(!res.ok) throw new Error('데이터를 찾을 수 없습니다');
-    const data = await res.json();
-    init(data.rows, data.spRate);
-    showToast('✅ 공유 데이터 로드 완료!', 2000);
+    const raw=await res.json();
+    const data=typeof raw.contents==='string'?JSON.parse(raw.contents):raw;
+    init(data.rows,data.spRate);
+    showToast('✅ 공유 데이터 로드 완료!',2000);
     return true;
   }catch(e){
     document.getElementById('lastUpdate').textContent='❌ 공유 링크가 만료됐거나 잘못된 링크입니다';
@@ -366,9 +331,17 @@ async function loadFromUrl(){
   }
 }
 
-/* ══════════════════════════════
-   Excel 파싱
-══════════════════════════════ */
+function copyLink(){
+  const input=document.getElementById('shareLinkInput');
+  input.select();
+  document.execCommand('copy');
+  showToast('✅ 링크 복사 완료! 카톡으로 공유하세요 😊');
+}
+function closeShareModal(){
+  document.getElementById('shareModal').classList.remove('show');
+}
+
+/* ── Excel 파싱 ── */
 function parseExcel(buffer){
   const wb=XLSX.read(buffer,{type:'array'});
   const ws=wb.Sheets['출력'];
@@ -402,7 +375,7 @@ function parseExcel(buffer){
 }
 
 function init(data,spRate){
-  allData=data; 표준진척률=spRate;
+  allData=data;표준진척률=spRate;
   const managers=[...new Set(data.map(d=>d.담당자))].sort();
   const regions=[...new Set(data.map(d=>d.권역).filter(Boolean))].sort();
   const mSel=document.getElementById('managerFilter');
@@ -618,8 +591,7 @@ function readFile(f){
   reader.readAsArrayBuffer(f);
 }
 
-/* ── 시작 시 URL에 id 있으면 자동 로드 ── */
-window.onload = function(){ loadFromUrl(); };
+window.onload=function(){loadFromUrl();};
 </script>
 </body>
 </html>
